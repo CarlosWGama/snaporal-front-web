@@ -56,7 +56,7 @@ export default function UsuarioList() {
             { success && <p className="bg-[#6eef01] px-5 text-center rounded-full color-[white] p-1">{success}</p> }
             { error && <p className="bg-[tomato] px-5 text-center rounded-full color-[white] p-1">{error}</p> }
             
-            {loading && <div className="flex justify-center"><AppLoader size={50} className="self-center"/></div>}
+            { loading && <div className="flex justify-center"><AppLoader size={50} className="self-center"/></div>}
             { !loading &&  <div className="overflow-x-auto">
                 <table className="min-w-full bg-white">
                     {/* HEADER  */}
