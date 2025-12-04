@@ -79,10 +79,11 @@ const UserServices = {
      * Retorna todos os usuários do sistema
      * @returns 
      */
-    getAll: async (): Promise<{ success: boolean, users?: any[] }> => {
+    getAll: async (page: number = 1): Promise<{ success: boolean, users?: any[], extra?: any }> => {
         try {
-            const response = await api.get('/users');
-            return { success: true, users: response.data };
+            const response = await api.get(`/users?page=${page}`);
+            console.log(response);
+            return { success: true, users: response.data.items, extra: response.data };
         } catch (error) {
             return { success: false };
         }

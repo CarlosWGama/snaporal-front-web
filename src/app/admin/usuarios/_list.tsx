@@ -5,20 +5,41 @@ import { AppButton, AppLoader, AppModal } from "@/themes/components";
 import { getFlashData } from "@/helpers/router";
 import { getRoleDescription } from "@/helpers/user";
 import UserServices from "@/services/user";
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 export default function UserList() {
 
-    const [ users, setUsers ] = useState<any[]>([]);
-    const [ userRemove, setUserRemove ] = useState<any>(null);
-    const [ success, setSuccess ] = useState<string|null>(null);
-    const [ error, setError ] = useState<string|null>(null);
-    const [ loading, setLoading ] = useState(true);
-    
+    const router = useRouter();
+    const pathname = usePathname();
+    const params = useSearchParams();
+    const [page, setPage] = useState(Number(params.get('page') ?? 1));
+    const [users, setUsers] = useState<any[]>([]);
+    const [pagination, setPagination] = useState<any>(null);
+    const [userRemove, setUserRemove] = useState<any>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
     // ======================================================================
-    const getUsers = async () => {
-        const { success , users } = await UserServices.getAll();
+    const getUsers = async (page: number) => {
+        setLoading(true);
+        const { success, users, extra } = await UserServices.getAll(page);
         if (success && users) setUsers(users);
+        setPagination(extra);
         setLoading(false);
+    }
+    // -----------
+    const handlePage = (type: 'prev' | 'next') => {
+        const newPage = type === 'prev' ? page - 1 : page + 1;
+        const newParams = new URLSearchParams(params);
+        newParams.set('page', newPage.toString());
+
+        router.replace(`${pathname}?${newParams.toString()}`);
+        router.refresh();
+
+        setPage(newPage);
+        getUsers(newPage);
+
     }
     // -----------
     const handleRemove = async (user: any) => {
@@ -31,7 +52,7 @@ export default function UserList() {
         setUserRemove(null);
         setLoading(true);
         await UserServices.delete(userRemove.id);
-        await getUsers();
+        await getUsers(1);
         setSuccess('Usuário excluido com sucesso!');
     }
     // -----------
@@ -41,23 +62,23 @@ export default function UserList() {
     // -----------
     useEffect(() => {
         //Recupera usuário
-        getUsers();
+        getUsers(page);
         //Recupera mensagem 
         (() => {
             const data = getFlashData();
             if (data?.success) setSuccess(data.success);
             if (data?.error) setError(data.error);
         })()
-        
+
     }, []);
     // ======================================================================
     return (
         <>
-            { success && <p className="bg-[#6eef01] px-5 text-center rounded-full color-[white] p-1">{success}</p> }
-            { error && <p className="bg-[tomato] px-5 text-center rounded-full color-[white] p-1">{error}</p> }
-            
-            { loading && <div className="flex justify-center"><AppLoader size={50} className="self-center"/></div>}
-            { !loading &&  <div className="overflow-x-auto">
+            {success && <p className="bg-[#6eef01] px-5 text-center rounded-full color-[white] p-1">{success}</p>}
+            {error && <p className="bg-[tomato] px-5 text-center rounded-full color-[white] p-1">{error}</p>}
+
+            {loading && <div className="flex justify-center"><AppLoader size={50} className="self-center" /></div>}
+            {!loading && <div className="overflow-x-auto">
                 <table className="min-w-full bg-white">
                     {/* HEADER  */}
                     <thead>
@@ -78,7 +99,7 @@ export default function UserList() {
                                 <td className="py-2 px-4 border-b border-gray-200 text-sm">{user.email}</td>
                                 <td className="py-2 px-4 border-b border-gray-200 text-sm">{getRoleDescription(user.role_id)}</td>
                                 <td className="py-2 px-4 border-b border-gray-200 text-sm">{user.admin ? 'SIM' : 'NÃO'}</td>
-                                
+
                                 <td className="py-2 px-4 border-b border-gray-200 text-sm">
                                     <Link href={`/admin/usuarios/editar/${user.id}`}>
                                         <i className="ion-edit text-[20px] text-[#1aab67] mx-[10px] cursor-pointer" />
@@ -89,16 +110,21 @@ export default function UserList() {
                         ))}
                     </tbody>
                 </table>
+
+                {pagination && <div className="flex justify-end mt-[20px]">
+                    {!pagination.firstPage && <AppButton title="Anterior" className="mr-[10px]" icon="arrow-left-a" form="round" onClick={() => handlePage('prev')} />}
+                    {!pagination.lastPage && <AppButton title="Proximo" className="ml-[10px]" icon="arrow-right-a" form="round" onClick={() => handlePage('next')} />}
+                </div>}
             </div>}
 
             {userRemove && <AppModal title="Remover usuário">
                 <p>Deseja realmente remover o usuário {userRemove.name} ({userRemove.email})?</p>
                 <div className="flex justify-between p-[20px]">
-                    <AppButton title="Sim" icon="checkmark" form="round" color="#428f01" onClick={handleModalConfirm}/>
-                    <AppButton title="Cancelar" icon="close" color="tomato" form="round" onClick={handleModalCancel}/>
+                    <AppButton title="Sim" icon="checkmark" form="round" color="#428f01" onClick={handleModalConfirm} />
+                    <AppButton title="Cancelar" icon="close" color="tomato" form="round" onClick={handleModalCancel} />
                 </div>
 
-            </AppModal>}  
+            </AppModal>}
         </>
     )
 }
