@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react"
 import Link from "next/link";
-import { AppButton, AppLoader, AppModal } from "@/themes/components";
+import { AppButton, AppInput, AppLoader, AppModal, AppSelect } from "@/themes/components";
 import { getFlashData } from "@/helpers/router";
 import { getRoleDescription } from "@/helpers/user";
 import UserServices from "@/services/user";
@@ -19,11 +19,17 @@ export default function UserList() {
     const [success, setSuccess] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState({
+        name: '',
+        email: '',
+        role_id: '',
+        admin: '-1',
+    })
 
     // ======================================================================
     const getUsers = async (page: number) => {
         setLoading(true);
-        const { success, users, extra } = await UserServices.getAll(page);
+        const { success, users, extra } = await UserServices.getAll(page, filter);
         if (success && users) setUsers(users);
         setPagination(extra);
         setLoading(false);
@@ -74,6 +80,29 @@ export default function UserList() {
     // ======================================================================
     return (
         <>
+            <h3 className="text-[18px] font-bold">Filtros</h3>
+            <div className="flex flex-col border-b-[2px] border-[#dedede] p-2">
+                <div className="flex gap-2">
+                    <AppInput type="text" label="Nome" value={filter.name} onChange={(e) => setFilter({ ...filter, name: e.target.value })} />
+                    <AppInput type="email" label="Email" value={filter.email} onChange={(e) => setFilter({ ...filter, email: e.target.value })} />
+
+                    <AppSelect label="Tipo usuário" value={filter.role_id} onChange={(e) => setFilter({ ...filter, role_id: e.target.value })}>
+                        <option value="">Todos</option>
+                        <option value="1">Especialista</option>
+                        <option value="2">Profissional</option>
+                    </AppSelect>
+
+                    <AppSelect label="Admininistrador" value={filter.admin} onChange={(e) => setFilter({ ...filter, admin: e.target.value })}>
+                        <option value="-1">Todos</option>
+                        <option value="1">Sim</option>
+                        <option value="0">Não</option>
+                    </AppSelect>
+
+                </div>
+                <AppButton title="Filtrar" className="w-[100px]" type="outline" onClick={() => getUsers(page)} />
+            </div>
+
+
             {success && <p className="bg-[#6eef01] px-5 text-center rounded-full color-[white] p-1">{success}</p>}
             {error && <p className="bg-[tomato] px-5 text-center rounded-full color-[white] p-1">{error}</p>}
 
